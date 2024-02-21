@@ -8,11 +8,15 @@ import * as poseDetection from "@tensorflow-models/pose-detection";
 import * as tf from "@tensorflow/tfjs-core";
 await tf.setBackend("webgl");
 import "@tensorflow/tfjs-backend-webgl";
-import { vec2 } from "three/examples/jsm/nodes/shadernode/ShaderNode";
+import * as CameraUtils from "three/addons/utils/CameraUtils.js";
+import * as depthEstimation from "@tensorflow-models/depth-estimation";
 let detector;
-let left_eye_x;
-let left_eye_y;
-let right_eye_x;
+let eye_average = { x: 0, y: 0, z: 0 };
+let xModifier = screen.width / 100;
+let yModifier = screen.height / 100;
+let blCorner = new THREE.Vector3(-xModifier / 2, -yModifier / 2, 0);
+let brCorner = new THREE.Vector3(xModifier / 2, -yModifier / 2, 0);
+let tlCorner = new THREE.Vector3(-xModifier / 2, yModifier / 2, 0);
 const canvas = document.getElementById("canvas");
 const webcam = document.getElementById("webcam");
 const ctx = canvas.getContext("2d");
@@ -35,141 +39,97 @@ const setupCamera = async () => {
     (resolve) => (webcam.onloadedmetadata = () => resolve(webcam))
   );
 };
-
+let estimator;
 const setup = async () => {
-  const model = poseDetection.SupportedModels.MoveNet;
-  detector = await poseDetection.createDetector(model);
+  const depthmodel = depthEstimation.SupportedModels.ARPortraitDepth;
+  const estimatorConfig = {
+    outputDepthRange: [0, 1],
+  };
+  estimator = await depthEstimation.createEstimator(
+    depthmodel,
+    estimatorConfig
+  );
+  const model = poseDetection.SupportedModels.BlazePose;
+  const detectorConfig = {
+    runtime: "tfjs",
+    enableSmoothing: true,
+    modelType: "full",
+  };
+  detector = await poseDetection.createDetector(model, detectorConfig);
   console.log(detector);
   const video = await setupCamera();
   video.play();
   return video;
 };
-
-function getFaceCoordinates(poses) {
-  const leftEye = poses[0]?.keypoints.filter(
-    (keypoint) => keypoint.name === "left_eye"
-  )[0];
-  const rightEye = poses[0]?.keypoints.filter(
-    (keypoint) => keypoint.name === "right_eye"
-  )[0];
-  if (leftEye && leftEye.score > 0.5) {
-    ctx.beginPath();
-    ctx.arc(leftEye.x, leftEye.y, 5, 0, 2 * Math.PI);
-    ctx.fillStyle = "red";
-    ctx.fill();
-    left_eye_x = leftEye.x / webcam.width;
-    left_eye_y = leftEye.y / webcam.height;
-  }
-  if (rightEye && rightEye.score > 0.5) {
-    ctx.beginPath();
-    ctx.arc(rightEye.x, rightEye.y, 5, 0, 2 * Math.PI);
-    ctx.fillStyle = "red";
-    ctx.fill();
-    right_eye_x = rightEye.x / webcam.width;
-  }
+let nose = { x: 0, y: 0, z: 0 };
+function getFaceCoordinates(poses, depthMap) {
+  if (poses.length == 0) return;
+  const depthArray = depthMap.toArray();
+  if (!depthArray[0]) return;
+  console.log(depthArray[0]);
+  const keyNose = poses[0].keypoints[0];
+  nose.z =
+    depthArray[Math.round(keyNose.x)][Math.round(keyNose.y)] * 16 * yModifier;
+  nose.x = (2 * nose.z * (webcam.width / 2 - keyNose.x)) / webcam.width;
+  nose.y = (yModifier * (webcam.height / 2 - keyNose.y)) / webcam.height;
 }
 setup();
 const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xffffff);
+scene.fog = new THREE.Fog(0xfffefe, 5, 40);
 const camera = new THREE.PerspectiveCamera(
-  75,
-  window.innerWidth / window.innerHeight,
+  45,
+  (window.innerWidth - 20) / (window.innerHeight - 20),
   0.1,
   135
 );
 const renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setSize(window.innerWidth - 20, window.innerHeight - 20);
 document.body.appendChild(renderer.domElement);
-/*
-const geometry = new THREE.BoxGeometry();
-const material = new THREE.MeshStandardMaterial({ color: 0x99999 });
-const cubee = new THREE.Mesh(geometry, material);
-cubee.castShadow = true;
-cubee.rotateY(0.5);
-cubee.rotateX(0.5);
-const cubew = new THREE.Mesh(geometry, material);
-cubew.rotateY(0.5);
-cubew.rotateX(0.5);
-cubew.castShadow = true;
 renderer.shadowMap.enabled = true;
-let light = new THREE.AmbientLight(0xffffff, 3);
-light.castShadow = true;
-light.position.set(0, 1, 1);
-light.target = scene;
-scene.add(light);
-scene.add(cubee);
-cubee.position.x = 1;
-cubee.position.z = 1;
-cubee.position.y = -1;
-scene.add(cubew);
-cubew.position.x = -1;
-*/
-let camTarget = new THREE.Vector3(0, 0, 0);
-
-scene.add(new THREE.AmbientLight(0xffffff, 3));
-camera.position.z = 10;
 camera.lookAt(0, 0, 0);
-
-const loader = new GLTFLoader();
-loader.load("reverseCube.glb", function (reverseCube) {
-  reverseCube.scene.scale.set(4, 4, 4);
-  reverseCube.scene.position.z = -12;
-  let northClone = reverseCube.scene.clone();
-  northClone.position.y = 2;
-  northClone.rotateX(-Math.PI);
-  let southClone = reverseCube.scene.clone();
-  southClone.position.y = -2;
-  let eastClone = reverseCube.scene.clone();
-  eastClone.position.x = 4;
-  eastClone.rotateZ(-Math.PI / 2);
-  let westClone = reverseCube.scene.clone();
-  westClone.position.x = -4;
-  westClone.rotateZ(Math.PI / 2);
-  reverseCube.scene.position.z -= 2;
-  reverseCube.scene.rotateX(Math.PI / 2);
-  //scene.add(northClone);
-  //scene.add(southClone);
-  //scene.add(eastClone);
-  // scene.add(westClone);
-  scene.add(reverseCube.scene);
-});
 let house;
 const houseLoader = new GLTFLoader();
 houseLoader.load("simple_house_-_kitchen.glb", function (houseModel) {
-  houseModel.scene.traverse((child) => {
-    if (child.isMesh) {
-      child.material.depthFunc = THREE.AlwaysDepth;
-    }
-  });
-  houseModel.scene.position.y = -3.75;
-  houseModel.scene.position.z = 8;
-  houseModel.scene.position.x = 1;
-  houseModel.scene.scale.set(1, 1, 1);
-  houseModel.scene.rotateY(-Math.PI / 6);
-  camTarget = houseModel.scene.children[0].children[0].position;
+  house = houseModel.scene;
+  house.position.set(3, -8, 0);
+  house.rotateY(-Math.PI / 6);
+  house.scale.set(2, 2, 2);
   scene.add(houseModel.scene);
 });
+const geometry = new THREE.BoxGeometry(16, 9, 10);
+const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+material.wireframe = true;
+const cube = new THREE.Mesh(geometry, material);
+scene.add(cube);
+cube.position.set(0, 0, 0);
+
+let cameraTargetPosition = camera.position.clone();
 
 async function animate() {
   ctx.drawImage(webcam, 0, 0, webcam.width, webcam.height);
-  const poses = await detector?.estimatePoses(canvas);
-  if (poses) getFaceCoordinates(poses);
+  const estimationConfig = { flipHorizontal: true };
+  const timestamp = performance.now();
+  const poses = await detector?.estimatePoses(
+    canvas,
+    estimationConfig,
+    timestamp
+  );
+  const estimatorConfig = {
+    minDepth: 0,
+    maxDepth: 1,
+  };
+  const depthMap = await estimator?.estimateDepth(canvas, estimatorConfig);
+  if (poses) getFaceCoordinates(poses, depthMap);
   UpdateCameraSetings();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
 animate();
-let fov = 1.0;
 
 function UpdateCameraSetings() {
-  const eyeDistance = left_eye_x ? left_eye_x - right_eye_x : 0.1;
-  const cameraDistance = 10;
-  camera.updateProjectionMatrix();
-  fov = 2 * Math.atan(eyeDistance / (2 * cameraDistance)) * (180 / Math.PI);
-  camera.fov = fov;
-  console.log(fov);
-  camera.position.z = cameraDistance;
-  camera.position.x = left_eye_x ? 2 * -left_eye_x + 1 : 0;
-  camera.position.y = left_eye_y ? 4 * -left_eye_y + 2 : 0;
-  camera.lookAt(0, 0, 0);
+  cameraTargetPosition = new THREE.Vector3(nose.x, nose.y, nose.z);
+  camera.position.lerp(cameraTargetPosition, 0.5);
+  CameraUtils.frameCorners(camera, blCorner, brCorner, tlCorner, false);
 }
 //Post Processing
