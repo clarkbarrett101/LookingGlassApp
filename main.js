@@ -181,6 +181,7 @@ const setupCamera = async () => {
 };
 
 const setup = async () => {
+  await poseDetection;
   const model = poseDetection.SupportedModels.BlazePose;
   const detectorConfig = {
     runtime: "tfjs",
