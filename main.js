@@ -1,10 +1,10 @@
-import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import * as poseDetection from "@tensorflow-models/pose-detection";
-import * as tf from "@tensorflow/tfjs-core";
+import * as THREE from "node_modules/three";
+import { GLTFLoader } from "node_modules/three/examples/jsm/loaders/GLTFLoader.js";
+import * as poseDetection from "node_modules/@tensorflow-models/pose-detection";
+import * as tf from "node_modules/@tensorflow/tfjs-core";
 await tf.setBackend("webgl");
-import "@tensorflow/tfjs-backend-webgl";
-import * as CameraUtils from "three/addons/utils/CameraUtils.js";
+import "node_modules/@tensorflow/tfjs-backend-webgl";
+import * as CameraUtils from "node_modules/three/addons/utils/CameraUtils.js";
 
 let house;
 const houseLoader = new GLTFLoader();
