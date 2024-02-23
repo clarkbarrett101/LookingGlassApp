@@ -4,7 +4,6 @@ import * as CameraUtils from "three/examples/jsm/utils/CameraUtils.js";
 import * as poseDetection from "@tensorflow-models/pose-detection";
 import * as tf from "@tensorflow/tfjs-core";
 await tf;
-await tf.setBackend("webgl");
 import * as WebGL from "@tensorflow/tfjs-backend-webgl";
 
 let house;
