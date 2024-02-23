@@ -1,10 +1,10 @@
-import * as THREE from "https://unpkg.com/three/build/three.module.js";
-import { GLTFLoader } from "https://unpkg.com/three/examples/jsm//loaders/GLTFLoader.js";
-import * as poseDetection from "https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection";
-import * as tf from "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core";
+import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm//loaders/GLTFLoader.js";
+import * as CameraUtils from "three/examples/jsm/utils/CameraUtils.js";
+import * as poseDetection from "@tensorflow-models/pose-detection";
+import * as tf from "@tensorflow/tfjs-core";
 await tf.setBackend("webgl");
-import "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl";
-import * as CameraUtils from "https://unpkg.com/three/examples/jsm/utils/CameraUtils.js";
+import "@tensorflow/tfjs-backend-webgl";
 
 let house;
 const houseLoader = new GLTFLoader();
