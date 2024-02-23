@@ -3,7 +3,8 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import * as CameraUtils from "three/examples/jsm/utils/CameraUtils.js";
 import * as poseDetection from "@tensorflow-models/pose-detection";
 import * as tf from "@tensorflow/tfjs-core";
-///await tf.setBackend("webgl");
+await tf;
+await tf.setBackend("webgl");
 import * as WebGL from "@tensorflow/tfjs-backend-webgl";
 
 let house;
@@ -71,9 +72,9 @@ let downVector = new THREE.Vector3(0, 0, 0);
 function startMotion() {
   console.log("starting motion");
   window.addEventListener("devicemotion", (event) => {
-    gyro.position.x += event.acceleration.x / 9.8;
-    gyro.position.y += event.acceleration.y / 9.8;
-    gyro.position.z += event.acceleration.z / 9.8;
+    gyro.x += event.acceleration.x / 9.8;
+    gyro.y += event.acceleration.y / 9.8;
+    gyro.z += event.acceleration.z / 9.8;
     downVector = new THREE.Vector3(
       event.accelerationIncludingGravity.x / 9.8,
       event.accelerationIncludingGravity.y / 9.8,
