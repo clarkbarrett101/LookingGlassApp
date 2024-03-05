@@ -1,13 +1,35 @@
 {
+  "homepage": "https://clarkbarrett101.github.io/LookingGlassApp/",
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.16.7",
     "@tensorflow-models/pose-detection": "^2.1.3",
     "@tensorflow/tfjs-backend-webgl": "^4.17.0",
     "@tensorflow/tfjs-converter": "^4.17.0",
-    "@tensorflow/tfjs-core": "^4.17.0"
+    "@tensorflow/tfjs-core": "^4.17.0",
+    "gh-pages": "^6.1.1",
+    "react-scripts": "^5.0.1"
   },
   "dependencies": {
     "@tensorflow-models/depth-estimation": "^0.0.4",
     "three": "^0.161.0",
     "vite": "^5.1.3"
+  },
+  "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
+    "start": "react-scripts start",
+    "build": "react-scripts build"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }
